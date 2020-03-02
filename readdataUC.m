@@ -60,6 +60,7 @@ dataUC.time_min_off = unit_parameters(:,9);
 fixedCost4startup = unit_parameters(:,14);
 dataUC.p_initial = unit_parameters(:,16);
 
+
 %Read CET data
 N=dataUC.N;
 FileName=strcat('CET\CET_',Filename,'.mod');%,'_',num2str(N)

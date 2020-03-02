@@ -170,9 +170,9 @@ while(TimeLimit>0)
 
             if(g_x>-0.001&&g_x<0.001)
                 gradient=sparse(2*x'*model.Q);
-                uit=-(x.*x)'.*(ones(1,Value_num)*model.Q);
+                uit=-(x.*x)'.*(ones(1,Value_num_NLP)*model.Q);
                 gradient(1,location_uit)=uit(1,loacation_pit);
-                gradient(1,Value_num)=-1;
+                gradient(1,Value_num_NLP)=-1;
                 
                 Aineq_PW=[Aineq_PW;gradient];
                 bineq_PW=[bineq_PW;0];
@@ -198,7 +198,7 @@ while(TimeLimit>0)
             TimeLimit=TimeLimit-time;
             [g_x,obj]=inform(model,x);
             disp_result( fid,'NLP_feasible',iter_num,g_x,total_time,result,obj,0);
-            if(result>1e-3)
+            if(result>1e-5)
                 if(length(x_k_1)>length(solution_NLP))
                     x_k_1=x_k_1(1:length(solution_NLP)+1,1);
                 else
@@ -267,13 +267,14 @@ while(TimeLimit>0)
         params.TimeLimit=TimeLimit;
         params.TOLER=1e-3;
         miu=1/(1+1e3*exp(-3)^(CC_iteration-1));
+
         for i=1:length(bineq_PW)
             Aineq_PW_cutting(i,:)=[Aineq_PW(i,:),miu*(Aineq_PW(i,:)*Aineq_PW(i,:)')^0.5];
             bineq_PW_cutting(i,:)=bineq_PW(i,:);
         end
         for i=1:length(bineq_obj_cutting)
               Aineq_obj_cutting(1,Value_num)=0;
-              Aineq_obj_cutting(1,Value_num)=1/miu*(Aineq_obj_cutting*Aineq_obj_cutting')^0.5;
+              Aineq_obj_cutting(1,Value_num)=(1/miu)*(Aineq_obj_cutting*Aineq_obj_cutting')^0.5;%
         end
         [result,x,time ] = sovle( [],f_MILP,[new_model.Aineq;Aineq_PW_cutting;Aineq_obj_cutting],[new_model.bineq;bineq_PW_cutting;bineq_obj_cutting],new_model.Aeq,new_model.beq,[],[],[],new_model.lb,new_model.ub,new_model.ctype,2,params);
         x_k_1=[x_k_1;0];

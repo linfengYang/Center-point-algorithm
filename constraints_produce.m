@@ -1,5 +1,5 @@
 %function Result=mian(FileName)
-function model=constraints_produce(dataUC,FileName)
+function model=constraints_produce(dataUC)
 
 Alpha = dataUC.alpha;                           %火电机组发电函数系数Alpha--N*1矩阵
 Beta = dataUC.beta;                             %火电机组发电函数系数Beta--N*1矩阵
@@ -29,24 +29,6 @@ price_buy=dataUC.price_buy;
 price_sell=dataUC.price_sell;
 emmission_buy_max=dataUC.emmission_buy_max;
 emmission_sell_max=dataUC.emmission_sell_max;
-% FileName=strcat('Tripple_Coefficient_',N,'.mod');
-% fid=fopen(FileName,'wt');
-% index=randi([1,10],N,1);
-% ThirdOrderCoefficient = [9.9e-7,9.9e-7,1e-6,9.9e-7,1.1e-6,6.4e-7,6.1e-7,6e-7,5.5e-7,5e-7];
-% deta=ThirdOrderCoefficient(index);
-% fprintf(fid,'%.8f\n',deta');
-
-
-
-% FileName=strcat('Tripple_Coefficient_',num2str(N),'.mod');
-% deta=load(FileName);
-%生成碳排放约束的系数矩阵
-
-% 
-% 0.00194 -0.15586    11.50486
-% 0.0042  0.33    13.86
-% 0.00403 0.3168  13.3056
-%每个机组100配额 12	10  200000  200000
 
 Uit=sparse(1,N*T);
 PitWan=sparse(1,N*T);
@@ -54,12 +36,10 @@ Sit=sparse(1,N*T);
 SitWan=sparse(1,N*T);
 Eb=sparse(1,1);
 Es=sparse(1,1);
-pai_b=sparse(1,1);
-pai_s=sparse(1,1);
 
-x=[Uit,PitWan,Sit,SitWan,Eb,Es,pai_b,pai_s];
+x=[Uit,PitWan,Sit,SitWan,Eb,Es];
 Value_num=length(x);
-uit_location=1:N*T;
+
 %Zit=[];
 
 
@@ -67,10 +47,7 @@ uit_location=1:N*T;
 Alpha_wan = Alpha + Beta .* ThPimin + Gama .* ThPimin .* ThPimin;           %Alpha弯弯--N*1矩阵
 Beta_wan = (ThPimax - ThPimin) .* (Beta + 2 * Gama .* ThPimin);             %Beta弯弯--N*1矩阵
 Gama_wan = Gama .* (ThPimax - ThPimin) .* (ThPimax - ThPimin);              %Gama弯弯--N*1矩阵
-% Alpha_wan = Alpha + Beta .* ThPimin + Gama .* ThPimin .* ThPimin + deta .* ThPimin .* ThPimin .* ThPimin;           %Alpha弯弯--N*1矩阵
-% Beta_wan = (ThPimax - ThPimin) .* (Beta + 2 * Gama .* ThPimin + 3 .* deta .* ThPimin .* ThPimin);             %Beta弯弯--N*1矩阵
-% Gama_wan = (Gama + 3 .* deta .* ThPimin) .* (ThPimax - ThPimin) .* (ThPimax - ThPimin);              %Gama弯弯--N*1矩阵
-% Deta_wan = deta .* (ThPimax - ThPimin) .* (ThPimax - ThPimin) .* (ThPimax - ThPimin);  %Derta弯弯--N*1矩阵
+
 % 目标函数需要的变量--end--
 
 % 电机组爬坡约束需要的变量--start--
@@ -485,29 +462,6 @@ cons_spinning_reserve_require(1:T,1:N*T)=Uit_state;
 Aineq_spinning_reserve_require=cons_spinning_reserve_require;
 bineq_spinning_reserve_require=-1*(Dt + Spin);
 
-
-%碳交易上限约束
-Aineq_trade_constraint=[];
-bineq_trade_constraint=[];
-
-Aineq_emission_buy_up=sparse(1,Value_num);
-Aineq_emission_buy_up(1,4*N*T+1)=1;
-Aineq_emission_buy_up(1,4*N*T+3)=-1*emmission_buy_max;
-bineq_emission_buy_up=0;
-
-Aineq_emission_sell_up=sparse(1,Value_num);
-Aineq_emission_sell_up(1,4*N*T+2)=1;
-Aineq_emission_sell_up(1,4*N*T+4)=-1*emmission_sell_max;
-bineq_emission_sell_up=0;
-
-Aineq_sell_buy_constraint=sparse(1,Value_num);
-Aineq_sell_buy_constraint(1,4*N*T+3)=1;
-Aineq_sell_buy_constraint(1,4*N*T+4)=1;
-bineq_sell_buy_constraint=1;
-
-Aineq_trade_constraint=[Aineq_emission_sell_up;Aineq_emission_buy_up;Aineq_sell_buy_constraint];
-bineq_trade_constraint=[bineq_emission_sell_up;bineq_emission_buy_up;bineq_sell_buy_constraint];
-
 %碳排放
 Q_emission=sparse(Value_num,Value_num);
 l_emission=sparse(1,Value_num);
@@ -534,10 +488,6 @@ l_emission(4*N*T+2,1)=1;
 %目标函数约束--end--
 
 %目标函数--start--
-% Pwan_tripple_coefficent=sparse(N*T,Value_num);
-% Pwan_tripple_coefficent(1:N*T,N*T+1:2*N*T)=diag(reshape(repmat(Deta_wan,1,T)',N*T,1));
-% D=sparse(Value_num,Value_num);
-% D(N*T+1:2*N*T,:)=Pwan_tripple_coefficent;
 Pwan_coefficient=sparse(N*T,Value_num);
 Pwan_coefficient(1:N*T,N*T+1:2*N*T)=2*diag(reshape(repmat(Gama_wan,1,T)',N*T,1));
 H=sparse(Value_num,Value_num);
@@ -549,12 +499,9 @@ f(2*N*T+1:3*N*T,1)=reshape(repmat(ThHot_cost_start,1,T)',N*T,1);
 f(3*N*T+1:4*N*T,1)=ones(N*T,1);
 f(4*N*T+1,1)=price_buy;
 f(4*N*T+2,1)=-1*price_sell;
-location_Eb=4*N*T+1;
-location_Es=4*N*T+2;
 
-
-Aineq=[Aineq_state;Aineq_startup_cost;Aineq_Pwan;Aineq_ramp_up;Aineq_ramp_down;Aineq_upORdowm;Aineq_spinning_reserve_require;Aineq_DCPowerFlow;Aineq_trade_constraint];
-bineq=[bineq_state;bineq_startup_cost;bineq_Pwan;bineq_ramp_up;bineq_ramp_down;bineq_upORdowm;bineq_spinning_reserve_require;bineq_DCPowerFlow;bineq_trade_constraint];
+Aineq=[Aineq_state;Aineq_startup_cost;Aineq_Pwan;Aineq_ramp_up;Aineq_ramp_down;Aineq_upORdowm;Aineq_spinning_reserve_require;Aineq_DCPowerFlow];
+bineq=[bineq_state;bineq_startup_cost;bineq_Pwan;bineq_ramp_up;bineq_ramp_down;bineq_upORdowm;bineq_spinning_reserve_require;bineq_DCPowerFlow];
 Aeq=[Aeq_UC_init;Aeq_Power_balance;Aeq_DCPowerFlow];
 beq=[beq_UC_init;beq_Power_balance;beq_DCPowerFlow];
 Q=Q_emission;
@@ -565,52 +512,14 @@ ub=inf*ones(Value_num,1);
 ub(1:N*T,1)=ones(N*T,1);
 ub(N*T+1:2*N*T,1)=ones(N*T,1);
 ub(2*N*T+1:3*N*T,1)=ones(N*T,1);
-ub(4*N*T+1,1)=inf;
-ub(4*N*T+2,1)=inf;
-ub(4*N*T+3,1)=1;
-ub(4*N*T+4,1)=1;
+ub(4*N*T+1,1)=emmission_buy_max;
+ub(4*N*T+2,1)=emmission_sell_max;
 
 ctype='';
 ctype(1,1:Value_num)='C';
 ctype(1,1:N*T)='B';
 ctype(1,2*N*T+1:3*N*T)='B';
-ctype(1,4*N*T+3:4*N*T+4)='B';
 
-% obj_function='';
-% for i=1:size(ctype,2)
-%     str_function=strcat(num2str(f(i)),'*x(',num2str(i),')');
-%     obj_function=strcat(obj_function,str_function,'+');
-% end
-% for i=1:size(ctype,2)
-%     str_function=strcat(num2str(H(i,i)),'*x(',num2str(i),')^2');
-%     obj_function=strcat(obj_function,str_function,'+');
-% end
-% for i=1:size(ctype,2)
-%     str_function=strcat(num2str(D(i,i)),'*x(',num2str(i),')^3');
-%     if(i==size(ctype,2))
-%         obj_function=strcat(obj_function,str_function);
-%     else
-%         obj_function=strcat(obj_function,str_function,'+');
-%     end
-% end
-% eval(strcat('obj_function=@(x)',obj_function));
-% 
-% CET_function='';
-% for i=1:size(ctype,2)
-%     str_function=strcat(num2str(l(i)),'*x(',num2str(i),')');
-%     CET_function=strcat(CET_function,str_function,'+');
-% end
-% for i=1:size(ctype,2)
-%     str_function=strcat(num2str(Q(i,i)),'*x(',num2str(i),')^2');
-%      if(i==size(ctype,2))
-%         CET_function=strcat(CET_function,str_function);
-%     else
-%         CET_function=strcat(CET_function,str_function,'+');
-%      end
-% end
-% eval(strcat('CET_function=@(x)',CET_function));
-
-% model.D=D;
 model.H=H;
 model.f=f;
 model.Aineq=Aineq;
@@ -623,12 +532,14 @@ model.r=r;
 model.lb=lb;
 model.ub=ub;
 model.ctype=ctype;
-model.location_Eb=location_Eb;
-model.location_Es=location_Es;
-model.location_uit=uit_location;
-% model.f_funtion=obj_function;
-% model.cet_function=CET_function;
+model.SR_Aineq=Aineq_spinning_reserve_require;
+model.SR_bineq=bineq_spinning_reserve_require;
+model.minOnorOff_Aineq=Aineq_upORdowm;
+model.minOnorOff_bineq=bineq_upORdowm;
 end
+
+
+
 
 
 

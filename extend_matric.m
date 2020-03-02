@@ -11,6 +11,10 @@ new_model.Aineq=[model.Aineq,sparse(size(model.Aineq,1),n)];
 new_model.bineq=model.bineq;
 new_model.Aeq=[model.Aeq,sparse(size(model.Aeq,1),n)];
 new_model.beq=model.beq;
+new_model.SR_Aineq=[model.SR_Aineq,sparse(size(model.SR_Aineq,1),n)];
+new_model.SR_bineq=model.SR_bineq;
+new_model.minOnorOff_Aineq=[model.minOnorOff_Aineq,sparse(size(model.minOnorOff_Aineq,1),n)];
+new_model.minOnorOff_bineq=model.minOnorOff_bineq;
 if(isempty(model.l))
     new_model.l=[];
 else
